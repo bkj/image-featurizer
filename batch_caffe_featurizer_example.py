@@ -6,6 +6,10 @@ CAFFE_ROOT = '/Users/BenJohnson/projects/software/caffe/'
 sys.path.insert(0, CAFFE_ROOT + 'python')
 import caffe
 
+sys.path.append('/Users/BenJohnson/projects/caffe_featurize')
+from caffe_featurizer import CaffeFeaturizer
+cf = CaffeFeaturizer(CAFFE_ROOT)
+
 # Utility for chunking
 def chunks(l, n):
     n = max(1, n)
