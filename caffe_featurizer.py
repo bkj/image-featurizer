@@ -39,12 +39,14 @@ class CaffeFeaturizer:
             if i % 10 == 0:
                 if not self.quiet:
                     print >> sys.stderr,  i
+            
             try:
                 self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
             except:
                 if not self.quiet:
                     print >> sys.stderr, 'error at %s (%d)' % (f, i)
                 self.errs.append(i)
+            
             i += 1
 
     def forward(self):
