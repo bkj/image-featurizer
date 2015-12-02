@@ -3,12 +3,24 @@ import sys
 import numpy as np
 import caffe
 
+class bcolors:
+    HEADER    = '\033[95m'
+    OKBLUE    = '\033[94m'
+    OKGREEN   = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 class CaffeFeaturizer:
     net         = None
     transformer = None
     files       = []
     batch_size  = None
     quiet       = None
+    counter     = 0
     
     def __init__(self, CAFFE_ROOT, quiet = False):
         self.caffe_root = CAFFE_ROOT
@@ -21,7 +33,7 @@ class CaffeFeaturizer:
         transformer.set_channel_swap('data', (2, 1, 0))
         self.transformer = transformer
         self.quiet = quiet
-
+        
     def set_batch_size(self, n):
         self.batch_size = n
         self.net.blobs['data'].reshape(n, 3, 227, 227)
@@ -32,27 +44,31 @@ class CaffeFeaturizer:
     def set_files(self, files):
         self.files = files
 
-    def load_files(self):
+    def load_files(self, print_mod = 50):
         self.errs = []
         i = 0
         for f in self.files:
-            if i % 10 == 0:
+            if (i + 1) % print_mod == 0:
                 if not self.quiet:
-                    print >> sys.stderr,  i
+                    print >> sys.stderr, bcolors.OKGREEN + 'total: %d \t current batch: %d' % (self.counter, i) + bcolors.ENDC
             
             try:
                 self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
             except:
                 if not self.quiet:
-                    print >> sys.stderr, 'error at %s (%d)' % (f, i)
+                    print >> sys.stderr, bcolors.WARNINGS + 'error at %s (%d)' % (f, i) + bcolors.ENDC
                 self.errs.append(i)
             
-            i += 1
+            i       += 1
+            self.counter += 1
 
     def forward(self):
+        if not self.quiet:
+            print >> sys.stderr, bcolors.OKBLUE + ' -- forward pass -- ' + bcolors.ENDC + '\n'
         self.net.forward()
 
     def featurize(self, layer = 'fc7'):
         feat = [ self.net.blobs['fc7'].data[i] for i in range(self.batch_size) ]
         feat = np.array(feat)
         return feat
+

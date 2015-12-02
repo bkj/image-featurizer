@@ -17,7 +17,7 @@ cf = CaffeFeaturizer(CAFFE_ROOT)
 # Argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--print-pandas', dest = 'print_pandas', action="store_true")
+parser.add_argument('--sparse', dest = 'sparse', action="store_true")
 
 args = parser.parse_args()
 
@@ -33,11 +33,15 @@ def chunker(stream, CHUNK_SIZE = 250):
     
     yield out
 
-def writer(proc, print_pandas = False):
-    if print_pandas:
-        print proc
+# NB : Should be printing this as a sparse matrix
+def writer(proc, sparse = False):
+    if not sparse:
+        print proc.to_csv(header = False, index = False)
     else:
-        print proc.to_csv(header = False)
+        df = pd.melt(proc, 'id')
+        df = df[df.value != 0].reset_index()
+        del df['index']
+        print df.to_csv(header = False, index = False)
 
 # --
 
@@ -58,4 +62,4 @@ def process_chunk(chunk):
 
 if __name__ == "__main__" :
     for chunk in chunker(sys.stdin):
-        writer(process_chunk(chunk), args.print_pandas)
+        writer(process_chunk(chunk), args.sparse)
