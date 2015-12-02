@@ -1,15 +1,23 @@
 #!/usr/bin/python
 
+# Streaming Caffe Image Featurizer
+#
+# Call like:
+#
+# ls images | xargs -I {} echo "images/{}" | python streaming_caffe_featurizer.py --sparse >> output.csv 
+
+
 import os, sys, itertools
 import numpy as np
 import pandas as pd
 import argparse
 
-CAFFE_ROOT = '/Users/BenJohnson/projects/software/caffe/'
+PROJECT_ROOT = '/Users/BenJohnson/projects/caffe_featurize'
+CAFFE_ROOT   = '/Users/BenJohnson/projects/software/caffe/'
 sys.path.insert(0, CAFFE_ROOT + 'python')
 import caffe
 
-sys.path.append('/Users/BenJohnson/projects/caffe_featurize')
+sys.path.append(PROJECT_ROOT)
 from caffe_featurizer import CaffeFeaturizer
 cf = CaffeFeaturizer(CAFFE_ROOT)
 
@@ -33,7 +41,8 @@ def chunker(stream, CHUNK_SIZE = 250):
     
     yield out
 
-# NB : Should be printing this as a sparse matrix
+# NB : Sparse repeats file names a lot, which is bad
+# Should print small keys and then a filename - key map
 def writer(proc, sparse = False):
     if not sparse:
         print proc.to_csv(header = False, index = False)
