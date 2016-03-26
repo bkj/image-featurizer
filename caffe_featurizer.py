@@ -22,13 +22,20 @@ class CaffeFeaturizer:
     quiet       = None
     counter     = 0
     
+    prototxt   = 'models/bvlc_reference_caffenet/deploy.prototxt'
+    caffemodel = 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
+    meanimage  = 'python/caffe/imagenet/ilsvrc_2012_mean.npy'
+    
     def __init__(self, CAFFE_ROOT, quiet = False):
         self.caffe_root = CAFFE_ROOT
         caffe.set_mode_cpu()
-        self.net    = caffe.Net(self.caffe_root + 'models/bvlc_reference_caffenet/deploy.prototxt', self.caffe_root + 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel', caffe.TEST)
+        self.net    = caffe.Net(self.caffe_root + self.prototxt, self.caffe_root + self.caffemodel, caffe.TEST)
         transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
         transformer.set_transpose('data', (2, 0, 1))
-        transformer.set_mean('data', np.load(self.caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy').mean(1).mean(1))
+        
+        if self.meanimage:
+            transformer.set_mean('data', np.load(self.caffe_root + self.meanimage).mean(1).mean(1))
+        
         transformer.set_raw_scale('data', 255)
         transformer.set_channel_swap('data', (2, 1, 0))
         self.transformer = transformer
