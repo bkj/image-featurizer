@@ -22,8 +22,10 @@ class CaffeFeaturizer:
     quiet       = None
     counter     = 0
     
-    def __init__(self, prototxt, caffemodel, meanimage=None, size=227, quiet=False):
-        caffe.set_mode_cpu()
+    def __init__(self, prototxt, caffemodel, meanimage=None, size=227, quiet=False, mode='cpu'):
+        if mode='cpu':
+            caffe.set_mode_cpu()
+        
         self.net    = caffe.Net(prototxt, caffemodel, caffe.TEST)
         transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
         transformer.set_transpose('data', (2, 0, 1))
