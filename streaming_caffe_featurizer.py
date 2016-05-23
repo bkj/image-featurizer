@@ -72,3 +72,4 @@ def process_chunk(chunk):
 if __name__ == "__main__" :
     for chunk in chunker(sys.stdin):
         writer(process_chunk(chunk), args.sparse)
+
