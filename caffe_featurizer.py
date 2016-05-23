@@ -22,34 +22,33 @@ class CaffeFeaturizer:
     quiet       = None
     counter     = 0
     
-    def __init__(self, CAFFE_ROOT, quiet = False, paths = None):
-        self.caffe_root = CAFFE_ROOT
+    def __init__(self, prototxt, caffemodel, meanimage=None, size=227, quiet=False, mode='cpu'):
+        if mode=='cpu':
+            caffe.set_mode_cpu()
         
-        if not paths:
-            self.pprototxt = self.caffe_root + 'models/bvlc_reference_caffenet/deploy.prototxt'
-            self.pmodel    = self.caffe_root + 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
-            self.pmean     = self.caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy'
-        
-        caffe.set_mode_cpu()
-        self.net    = caffe.Net(self.pprototxt, self.pmodel, caffe.TEST)
+        self.net    = caffe.Net(prototxt, caffemodel, caffe.TEST)
         transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
         transformer.set_transpose('data', (2, 0, 1))
-        transformer.set_mean('data', np.load(self.pmean).mean(1).mean(1))
+        
+        if meanimage:
+            transformer.set_mean('data', np.load(meanimage).mean(1).mean(1))
+        
         transformer.set_raw_scale('data', 255)
         transformer.set_channel_swap('data', (2, 1, 0))
         self.transformer = transformer
         self.quiet = quiet
+        self.size = size
         
     def set_batch_size(self, n):
         self.batch_size = n
-        self.net.blobs['data'].reshape(n, 3, 227, 227)
-
+        self.net.blobs['data'].reshape(n, 3, self.size, self.size)
+        
     def get_files(self):
         return self.files
-
+        
     def set_files(self, files):
         self.files = files
-
+        
     def load_files(self, print_mod = 50):
         self.errs = []
         i = 0
@@ -58,21 +57,21 @@ class CaffeFeaturizer:
                 if not self.quiet:
                     print >> sys.stderr, bcolors.OKGREEN + 'total: %d \t current batch: %d' % (self.counter, i) + bcolors.ENDC
             
-            try:
-                self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
-            except:
-                if not self.quiet:
-                    print >> sys.stderr, bcolors.WARNING + 'error at %s (%d)' % (f, i) + bcolors.ENDC
-                self.errs.append(i)
+            # try:
+            self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
+            # except:
+            #     if not self.quiet:
+            #         print >> sys.stderr, bcolors.WARNING + 'error at %s (%d)' % (f, i) + bcolors.ENDC
+            #     self.errs.append(i)
             
-            i       += 1
+            i += 1
             self.counter += 1
-
+            
     def forward(self):
         if not self.quiet:
             print >> sys.stderr, bcolors.OKBLUE + ' -- forward pass -- ' + bcolors.ENDC + '\n'
         self.net.forward()
-
+        
     def featurize(self, layer = 'fc7'):
         feat = [ self.net.blobs['fc7'].data[i] for i in range(self.batch_size) ]
         feat = np.array(feat)
