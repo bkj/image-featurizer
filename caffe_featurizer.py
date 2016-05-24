@@ -23,8 +23,11 @@ class CaffeFeaturizer:
     counter     = 0
     
     def __init__(self, prototxt, caffemodel, meanimage=None, size=227, quiet=False, mode='cpu'):
+        print >> sys.stderr, 'mode :: %s' % mode
         if mode=='cpu':
             caffe.set_mode_cpu()
+        else:
+            caffe.set_mode_gpu()
         
         self.net    = caffe.Net(prototxt, caffemodel, caffe.TEST)
         transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
@@ -57,12 +60,12 @@ class CaffeFeaturizer:
                 if not self.quiet:
                     print >> sys.stderr, bcolors.OKGREEN + 'total: %d \t current batch: %d' % (self.counter, i) + bcolors.ENDC
             
-            # try:
-            self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
-            # except:
-            #     if not self.quiet:
-            #         print >> sys.stderr, bcolors.WARNING + 'error at %s (%d)' % (f, i) + bcolors.ENDC
-            #     self.errs.append(i)
+            try:
+                self.net.blobs['data'].data[i] = self.transformer.preprocess('data', caffe.io.load_image(f))
+            except:
+                if not self.quiet:
+                    print >> sys.stderr, bcolors.WARNING + 'error at %s (%d)' % (f, i) + bcolors.ENDC
+                self.errs.append(i)
             
             i += 1
             self.counter += 1
@@ -70,10 +73,10 @@ class CaffeFeaturizer:
     def forward(self):
         if not self.quiet:
             print >> sys.stderr, bcolors.OKBLUE + ' -- forward pass -- ' + bcolors.ENDC + '\n'
+        
         self.net.forward()
         
     def featurize(self, layer = 'fc7'):
         feat = [ self.net.blobs['fc7'].data[i] for i in range(self.batch_size) ]
-        feat = np.array(feat)
-        return feat
+        return np.array(feat)
 
